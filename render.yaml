@@ -1,6 +1,12 @@
 services:
   - type: web
-    name: your-app
+    name: financeee-backend
     env: node
-    buildCommand: cd backend && npm install && npm rebuild sqlite3
+    buildCommand: cd backend && npm install
     startCommand: cd backend && node server.js
+
+  - type: web
+    name: financeee-ai
+    env: python
+    buildCommand: cd ai && pip install -r requirements.txt
+    startCommand: cd ai && gunicorn app:app
