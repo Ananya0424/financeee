@@ -326,16 +326,63 @@ export default function Dashboard() {
       }
       
       const csvText = await res.text();
-      // Instantly open the report in a new tab so she doesn't need Excel/Notepad at all!
+      const rows = csvText.trim().split('\\n').map(r => {
+        // Simple CSV parse handling quotes roughly
+        let row = []; let inQuote = false; let curr = '';
+        for (let i=0; i<r.length; i++) {
+          if (r[i] === '"') inQuote = !inQuote;
+          else if (r[i] === ',' && !inQuote) { row.push(curr); curr = ''; }
+          else curr += r[i];
+        }
+        row.push(curr);
+        return row;
+      });
+
+      let tableHtml = '<table class="report-table">';
+      rows.forEach((row, index) => {
+        if (index === 0) {
+          tableHtml += '<thead><tr>' + row.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+        } else {
+          tableHtml += '<tr>' + row.map(c => `<td>${c}</td>`).join('') + '</tr>';
+        }
+      });
+      tableHtml += '</tbody></table>';
+
       const newWin = window.open('', '_blank');
       if (newWin) {
         newWin.document.write(`
           <html>
-            <head><title>Finance Report - ${now.getFullYear()}</title></head>
-            <body style="font-family: monospace; padding: 20px; background: #fff;">
-              <h2>Finance Report - ${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()}</h2>
-              <pre style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">${csvText}</pre>
-              <button onclick="window.print()" style="padding: 10px 20px; margin-top: 20px; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 5px;">Print / Save as PDF</button>
+            <head>
+              <title>Finance Report</title>
+              <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+              <style>
+                body { font-family: 'Outfit', sans-serif; background: #f8fafc; color: #1e293b; padding: 40px; margin: 0; }
+                .report-container { max-width: 900px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+                .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
+                .header h1 { font-weight: 700; font-size: 28px; color: #0f172a; margin: 0 0 5px 0; }
+                .header p { color: #64748b; font-size: 14px; margin: 0; }
+                .report-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+                .report-table th { background: #2563eb; color: #fff; font-weight: 600; padding: 14px; text-align: left; }
+                .report-table th:first-child { border-top-left-radius: 8px; }
+                .report-table th:last-child { border-top-right-radius: 8px; }
+                .report-table td { padding: 14px; border-bottom: 1px solid #e2e8f0; }
+                .report-table tr:last-child td { border-bottom: none; }
+                .report-table tr:hover { background: #f1f5f9; }
+                td:nth-child(6) { font-weight: 700; }
+                .print-btn { display: block; width: fit-content; margin: 30px auto 0; padding: 12px 24px; background: #10b981; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: background 0.2s; font-family: inherit; }
+                .print-btn:hover { background: #059669; }
+                @media print { body { background: #fff; padding: 0; } .report-container { box-shadow: none; padding: 0; } .print-btn { display: none; } }
+              </style>
+            </head>
+            <body>
+              <div class="report-container">
+                <div class="header">
+                  <h1>Personal Finance Report</h1>
+                  <p>Transactions for ${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()}</p>
+                </div>
+                ${tableHtml}
+                <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+              </div>
             </body>
           </html>
         `);
