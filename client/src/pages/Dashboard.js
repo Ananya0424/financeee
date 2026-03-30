@@ -255,6 +255,8 @@ export default function Dashboard() {
   const [filterPayment, setFilterPayment] = useState('');
   const [filterType, setFilterType] = useState('');
   const [reportData, setReportData] = useState(null);
+  const [repMonth, setRepMonth] = useState(new Date().getMonth() + 1);
+  const [repYear, setRepYear] = useState(new Date().getFullYear());
 
   useEffect(() => { fetchTransactions(); }, []);
 
@@ -309,24 +311,25 @@ export default function Dashboard() {
     }
   };
 
-  const generateReport = async () => {
+  const generateReport = async (m, y) => {
+    const targetMonth = m || repMonth;
+    const targetYear = y || repYear;
     setActiveTab('reports');
     setReportData(null);
     try {
-      const now = new Date();
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/reports/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ month: now.getMonth() + 1, year: now.getFullYear() })
+        body: JSON.stringify({ month: targetMonth, year: targetYear })
       });
 
       if (!res.ok) {
-        setReportData({ error: 'Failed to generate report or no transactions this month.' });
+        setReportData({ error: `No transactions found for ${new Date(targetYear, targetMonth-1).toLocaleString('default', { month: 'long' })} ${targetYear}.` });
         return;
       }
       
       const csvText = await res.text();
-      const lines = csvText.trim().split('\\n');
+      const lines = csvText.trim().split('\n');
       if (lines.length <= 1) {
         setReportData({ error: 'No data returned.' });
         return;
@@ -354,7 +357,7 @@ export default function Dashboard() {
         }
       });
       
-      setReportData({ rows: tRows, totalIn, totalOut, netBal: totalIn - totalOut, month: now.toLocaleString('default', { month: 'long' }), year: now.getFullYear() });
+      setReportData({ rows: tRows, totalIn, totalOut, netBal: totalIn - totalOut, month: new Date(targetYear, targetMonth-1).toLocaleString('default', { month: 'long' }), year: targetYear });
     } catch {
       setReportData({ error: 'Server error while generating report.' });
     }
@@ -536,19 +539,29 @@ export default function Dashboard() {
 
             {activeTab === 'reports' && (
               <div className="db-card" style={{ minHeight:'400px' }}>
-                <div className="db-card-title" style={{ display:'flex', justifyContent:'space-between' }}>
-                  <span>Official Monthly Report</span>
-                  <button className="db-btn-primary" onClick={() => window.print()}>🖨️ Print PDF</button>
+                <div className="db-card-title" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <span>Monthly Report</span>
+                    <select className="db-select" style={{ width:'130px', padding:'6px 10px' }} value={repMonth} onChange={e => setRepMonth(Number(e.target.value))}>
+                      {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m,i) => <option key={m} value={i+1}>{m}</option>)}
+                    </select>
+                    <select className="db-select" style={{ width:'100px', padding:'6px 10px' }} value={repYear} onChange={e => setRepYear(Number(e.target.value))}>
+                      {[2024,2025,2026,2027].map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                    <button className="db-btn-primary" style={{ padding:'7px 15px' }} onClick={() => generateReport(repMonth, repYear)}>View</button>
+                  </div>
+                  <button className="db-btn-primary" style={{ background:'#10b981' }} onClick={() => window.print()}>🖨️ Print PDF</button>
                 </div>
                 {!reportData ? (
                   <div className="db-empty" style={{ marginTop:40 }}>
                     <div className="db-loading-wave" style={{ justifyContent:'center' }}><div className="db-dot" /><div className="db-dot" /><div className="db-dot" /></div>
-                    Generating report data securely...
+                    Select month and click 'View' to see your report
                   </div>
                 ) : reportData.error ? (
                   <div className="db-empty" style={{ marginTop:40 }}>
-                    <div style={{ fontSize:32 }}>⚠️</div><br/>
-                    <strong style={{ color:'#dc2626' }}>{reportData.error}</strong>
+                    <div style={{ fontSize:32 }}>📁</div><br/>
+                    <strong style={{ color:'#64748b' }}>{reportData.error}</strong>
+                    <p style={{ fontSize:12, marginTop:8 }}>Try selecting a different month where you have transactions.</p>
                   </div>
                 ) : (
                   <div>
