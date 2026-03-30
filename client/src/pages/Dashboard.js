@@ -313,10 +313,7 @@ export default function Dashboard() {
       const now = new Date();
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/reports/generate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ month: now.getMonth() + 1, year: now.getFullYear() })
       });
 
@@ -326,8 +323,11 @@ export default function Dashboard() {
       }
       
       const csvText = await res.text();
-      const rows = csvText.trim().split('\\n').map(r => {
-        // Simple CSV parse handling quotes roughly
+      const lines = csvText.trim().split('\\n');
+      if (lines.length <= 1) return; // Only header
+
+      let totalIn = 0; let totalOut = 0;
+      const rows = lines.map(r => {
         let row = []; let inQuote = false; let curr = '';
         for (let i=0; i<r.length; i++) {
           if (r[i] === '"') inQuote = !inQuote;
@@ -338,55 +338,126 @@ export default function Dashboard() {
         return row;
       });
 
-      let tableHtml = '<table class="report-table">';
-      rows.forEach((row, index) => {
-        if (index === 0) {
-          tableHtml += '<thead><tr>' + row.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
-        } else {
-          tableHtml += '<tr>' + row.map(c => `<td>${c}</td>`).join('') + '</tr>';
+      // Calc summary
+      for(let i=1; i<rows.length; i++) {
+        const type = rows[i][4];
+        const amt = parseFloat(rows[i][5]);
+        if (!isNaN(amt)) {
+           if (type==='Income' || type==='income') totalIn += amt;
+           else totalOut += amt;
         }
+      }
+      const netBal = totalIn - totalOut;
+
+      let tableHtml = '<table class="tx-table">';
+      rows.forEach((row, index) => {
+        let trHtml = '<tr>';
+        row.forEach((cell, cIdx) => {
+          // Amount is 5th index (6th col)
+          const align = cIdx === 5 ? 'right' : cIdx === 0 ? 'center' : 'left';
+          if (index === 0) {
+            trHtml += `<th style="text-align:${align}">${cell}</th>`;
+          } else {
+            let val = cell;
+            if (cIdx === 5) val = '₹' + parseFloat(cell).toLocaleString('en-IN');
+            if (cIdx === 4) { // coloring 'Income' vs 'Expense'
+                const color = val.toLowerCase()==='income'?'#16a34a':'#dc2626';
+                val = `<span style="color:${color}; font-weight:600; font-size:11px; padding:2px 6px; background:${color}15; border-radius:4px;">${val.toUpperCase()}</span>`;
+            }
+            trHtml += `<td style="text-align:${align}">${val}</td>`;
+          }
+        });
+        trHtml += '</tr>';
+        tableHtml += trHtml;
       });
-      tableHtml += '</tbody></table>';
+      tableHtml += '</table>';
 
       const newWin = window.open('', '_blank');
       if (newWin) {
         newWin.document.write(`
+          <!DOCTYPE html>
           <html>
             <head>
-              <title>Finance Report</title>
-              <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+              <title>Finance Report - ${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()}</title>
+              <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
               <style>
-                body { font-family: 'Outfit', sans-serif; background: #f8fafc; color: #1e293b; padding: 40px; margin: 0; }
-                .report-container { max-width: 900px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-                .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
-                .header h1 { font-weight: 700; font-size: 28px; color: #0f172a; margin: 0 0 5px 0; }
-                .header p { color: #64748b; font-size: 14px; margin: 0; }
-                .report-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-                .report-table th { background: #2563eb; color: #fff; font-weight: 600; padding: 14px; text-align: left; }
-                .report-table th:first-child { border-top-left-radius: 8px; }
-                .report-table th:last-child { border-top-right-radius: 8px; }
-                .report-table td { padding: 14px; border-bottom: 1px solid #e2e8f0; }
-                .report-table tr:last-child td { border-bottom: none; }
-                .report-table tr:hover { background: #f1f5f9; }
-                td:nth-child(6) { font-weight: 700; }
-                .print-btn { display: block; width: fit-content; margin: 30px auto 0; padding: 12px 24px; background: #10b981; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: background 0.2s; font-family: inherit; }
-                .print-btn:hover { background: #059669; }
-                @media print { body { background: #fff; padding: 0; } .report-container { box-shadow: none; padding: 0; } .print-btn { display: none; } }
+                @page { size: A4; margin: 1.5cm; }
+                body { font-family: 'Inter', sans-serif; background: #e2e8f0; color: #0f172a; margin: 0; padding: 40px 20px; font-size: 13px; }
+                .report-page { background: #fff; max-width: 21cm; min-height: 29.7cm; margin: 0 auto; padding: 2cm; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 4px; box-sizing: border-box; }
+                
+                .header-flex { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 2px solid #cbd5e1; padding-bottom: 20px; }
+                .logo-box h1 { margin: 0; font-size: 24px; color: #1e3a8a; letter-spacing: -0.5px; }
+                .logo-box p { margin: 4px 0 0 0; color: #64748b; font-size: 12px; }
+                .meta-box { text-align: right; font-size: 12px; color: #475569; }
+                .meta-box strong { color: #0f172a; display: block; font-size: 14px; margin-bottom: 4px; }
+                
+                .summary-grid { display: flex; gap: 15px; margin-bottom: 30px; }
+                .sum-card { flex: 1; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center; }
+                .sum-title { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; margin-bottom: 6px; letter-spacing: 0.5px; }
+                .sum-val { font-size: 20px; font-weight: 700; color: #0f172a; }
+                .sum-in { color: #16a34a; } .sum-out { color: #dc2626; }
+                
+                .tx-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                .tx-table th { background: #f1f5f9; color: #334155; font-weight: 600; padding: 10px 12px; border-bottom: 2px solid #cbd5e1; text-transform:uppercase; font-size:10px; letter-spacing:0.5px; }
+                .tx-table td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; }
+                .tx-table tr:last-child td { border-bottom: none; }
+                
+                .footer { margin-top: 40px; text-align: center; color: #94a3b8; font-size: 10px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+                
+                .print-btn { position: fixed; bottom: 30px; right: 30px; background: #2563eb; color: #fff; border: none; padding: 14px 24px; font-size: 14px; font-weight: 600; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.3); font-family: inherit; z-index: 1000; }
+                .print-btn:hover { background: #1d4ed8; }
+                
+                @media print {
+                  body { background: #fff; padding: 0; }
+                  .report-page { box-shadow: none; padding: 0; min-height: auto; max-width: 100%; margin: 0; }
+                  .print-btn { display: none !important; }
+                  .tx-table th { background: #fff !important; color: #000; border-bottom: 2px solid #000; }
+                }
               </style>
             </head>
             <body>
-              <div class="report-container">
-                <div class="header">
-                  <h1>Personal Finance Report</h1>
-                  <p>Transactions for ${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()}</p>
+              <button class="print-btn" onclick="window.print()">🖨️ Print Statement</button>
+              <div class="report-page">
+                <div class="header-flex">
+                  <div class="logo-box">
+                    <h1>Finance Tracker</h1>
+                    <p>Official Transaction Statement</p>
+                  </div>
+                  <div class="meta-box">
+                    <strong>Report Period</strong>
+                    ${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()}<br>
+                    <span style="color:#94a3b8; font-size:10px; display:block; margin-top:6px;">Generated: ${now.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</span>
+                  </div>
                 </div>
+                
+                <div class="summary-grid">
+                  <div class="sum-card">
+                    <div class="sum-title">Total Income</div>
+                    <div class="sum-val sum-in">₹${totalIn.toLocaleString('en-IN')}</div>
+                  </div>
+                  <div class="sum-card">
+                    <div class="sum-title">Total Expense</div>
+                    <div class="sum-val sum-out">₹${totalOut.toLocaleString('en-IN')}</div>
+                  </div>
+                  <div class="sum-card">
+                    <div class="sum-title">Net Balance</div>
+                    <div class="sum-val" style="color:${netBal>=0?'#2563eb':'#dc2626'}">₹${netBal.toLocaleString('en-IN')}</div>
+                  </div>
+                </div>
+
+                <div style="font-weight:600; font-size:14px; margin-bottom:12px; color:#1e293b; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">Transaction Details</div>
                 ${tableHtml}
-                <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+                
+                <div class="footer">
+                  This report is automatically generated by FinanceTracker.<br>
+                  Page 1 of 1
+                </div>
               </div>
             </body>
           </html>
         `);
         newWin.document.close();
+        newWin.focus();
       } else {
         alert('Report generated! Please allow popups to see it.');
       }
