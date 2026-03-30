@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: your-app
+    env: node
+    buildCommand: cd backend && npm install && npm rebuild sqlite3
+    startCommand: cd backend && node server.js
