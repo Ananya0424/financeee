@@ -1,119 +1,239 @@
-# Personal Finance Tracker
+# 💰 Personal Finance Tracker
 
-A **Full Stack Personal Finance Tracker Web App** built with React.js, Node.js, Express, MongoDB, and Python Flask.  
-This project allows users to track their income, expenses, and budgets, visualize their finances using interactive charts, and get AI-powered insights.
-
----
-
-## **Tech Stack**
-
-- **Frontend:** React.js (`/client`)  
-- **Backend:** Node.js + Express (`/backend`)  
-- **Database:** MongoDB Atlas  
-- **AI Module:** Python Flask (`/ai`)  
-- **Charts & Visualization:** Recharts  
-- **Deployment:** Vercel (Frontend), Render/Railway (Backend & AI APIs)
+A full-stack web application to track daily income & expenses, set monthly budgets, visualize spending with interactive charts, and get AI-powered financial insights.
 
 ---
 
-## **Project Structure**
-/Flask
-├── /client # React.js frontend
-├── /backend # Node.js + Express backend
-├── /ai # Python Flask AI module
-├── vercel.json # Vercel deployment config
+## 🌐 Live Demo
+
+| Service | URL |
+|---------|-----|
+| 🖥️ Frontend | https://financeee-gd72.vercel.app |
+| ⚙️ Backend API | https://financeee-backend1.onrender.com |
+| 🤖 Python AI | https://financeee-ai.onrender.com |
+
+---
+
+## 🔐 Test Login Credentials
+
+```
+Email:    user@example.com
+Password: 123456
+```
+
+> You can also create your own account using the Sign Up page.
+
+---
+
+## ✨ Features
+
+- ✅ User Authentication (Signup / Login with JWT)
+- ✅ Add, Edit, Delete income & expense transactions
+- ✅ Filter transactions by category, payment method, and type
+- ✅ Search transactions by title or category
+- ✅ Set monthly budgets per category with alerts (80% & 100%)
+- ✅ Dashboard with financial summary cards
+- ✅ Interactive Charts — Pie, Bar, and Line graphs (Recharts)
+- ✅ AI-powered smart financial insights (Python Flask + Pandas)
+- ✅ Monthly report generation saved in SQLite database
+- ✅ Top payment methods tracker (UPI, Cash, Credit Card, etc.)
+- ✅ Responsive and mobile-friendly UI
+- ✅ Each user sees only their own data (JWT-protected routes)
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React.js (Create React App) |
+| Backend | Node.js + Express.js |
+| Main Database | MongoDB Atlas |
+| SQL Reports | SQLite |
+| AI Module | Python Flask + Pandas |
+| Charts | Recharts |
+| Auth | JWT (JSON Web Tokens) |
+| Deployment | Vercel (Frontend), Render (Backend + AI) |
+
+---
+
+## 📁 Project Structure
+
+```
+financeee/
+├── client/              # React.js Frontend
+│   ├── src/
+│   │   ├── pages/
+│   │   │   ├── Dashboard.js
+│   │   │   ├── Login.js
+│   │   │   └── Signup.js
+│   │   └── components/
+│   │       ├── Charts.jsx
+│   │       └── Budget.jsx
+│   └── package.json
+│
+├── backend/             # Node.js + Express Backend
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── transactions.js
+│   │   └── reports.js
+│   ├── models/
+│   ├── middleware/
+│   ├── server.js
+│   └── package.json
+│
+├── ai/                  # Python Flask AI Module
+│   ├── app.py
+│   └── requirements.txt
+│
 └── README.md
-
-
----
-
-## **Features**
-
-- Add, edit, and delete income and expenses  
-- Track budgets and spending categories  
-- Interactive charts to visualize income vs.   expenses  
-- AI-powered financial insights and predictions (via Flask API)  
-- Responsive and mobile-friendly UI  
+```
 
 ---
 
-## **Getting Started (Local Setup)**
+## 🚀 How to Run Locally
 
-### **Frontend (React)**
+### 1️⃣ Clone the Repository
 
 ```bash
-cd client
-npm install
-npm start
+git clone https://github.com/Ananya0424/financeee.git
+cd financeee
 ```
--Runs the frontend on http://localhost:3000
--Make sure your backend API is running for full functionality
 
-##**Backend (Node.js + Express)**
+---
+
+### 2️⃣ Backend (Node.js + Express)
 
 ```bash
 cd backend
 npm install
+```
+
+Create a `.env` file in the `backend/` folder:
+
+```env
+MONGODB_URI=your_mongodb_atlas_connection_string
+JWT_SECRET=your_jwt_secret_key
+PORT=5000
+FRONTEND_URL=http://localhost:3000
+NODE_ENV=development
+```
+
+Start the backend:
+
+```bash
 npm start
 ```
--Runs backend on http://localhost:5000 (default)
--Make sure MongoDB Atlas URI is set in .env:
-MONGO_URI=your_mongodb_connection_string
 
+> Runs on **http://localhost:5000**
 
-##**AI Module (Flask)**
+---
+
+### 3️⃣ Frontend (React)
+
+```bash
+cd client
+npm install
+```
+
+Create a `.env` file in the `client/` folder:
+
+```env
+REACT_APP_BACKEND_URL=http://localhost:5000
+REACT_APP_AI_URL=http://localhost:5001
+```
+
+Start the frontend:
+
+```bash
+npm start
+```
+
+> Runs on **http://localhost:3000**
+
+---
+
+### 4️⃣ Python AI Module (Flask)
 
 ```bash
 cd ai
 python -m venv venv
-venv\Scripts\activate      # Windows
+
+# Windows
+venv\Scripts\activate
+
+# Mac/Linux
+source venv/bin/activate
+
 pip install -r requirements.txt
 python app.py
 ```
-Runs AI API on http://localhost:8000 (default)
 
+> Runs on **http://localhost:5001**
 
-##**Environment Variables**
+---
 
-# Frontend (client/.env):
+## 🔑 Environment Variables
 
-REACT_APP_BACKEND_URL=http://localhost:5000
-REACT_APP_AI_URL=http://localhost:8000
+### Backend — `backend/.env.example`
 
-# Backend (backend/.env):
-
-MONGO_URI=your_mongodb_connection_string
+```env
+MONGODB_URI=your_mongodb_atlas_connection_string_here
+JWT_SECRET=your_jwt_secret_key_here
 PORT=5000
+FRONTEND_URL=http://localhost:3000
+NODE_ENV=development
+```
 
-# AI Module (ai/.env):
+### Frontend — `client/.env.example`
 
-FLASK_ENV=development
-PORT=8000
+```env
+REACT_APP_BACKEND_URL=http://localhost:5000
+REACT_APP_AI_URL=http://localhost:5001
+```
 
-##**Deployment**
+---
 
-##**Frontend (Vercel)*
-1.Install Vercel CLI:
- ```bash
-   npm install -g vercel
-   vercel login
-   ```
-2.Deploy from project root:
-```bash
-  cd /Flask
-  vercel --prod
-  ```
--Root directory: client
--Build command: npm run build
--Output directory: build
+## 📊 API Endpoints
 
-React frontend live URL will be provided by Vercel. 
+### Auth
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/signup` | Register new user |
+| POST | `/api/auth/login` | Login user |
 
-##**Backend & AI Module (Render / Railway / Heroku)**
+### Transactions
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/transactions/all` | Get all transactions |
+| POST | `/api/transactions/add` | Add transaction |
+| PUT | `/api/transactions/edit/:id` | Edit transaction |
+| DELETE | `/api/transactions/delete/:id` | Delete transaction |
 
--Push /backend and /ai folders to GitHub
--Connect each to Render or Railway
--Set start commands:
-  Backend: node index.js or npm start
-  AI: python app.py
--Update frontend .env with deployed API URLs
+### Reports
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/reports/generate` | Generate monthly report |
+
+### AI (Python)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/analyze` | Get AI financial insights |
+
+---
+
+## 🚢 Deployment
+
+| Part | Platform | Config |
+|------|----------|--------|
+| Frontend | Vercel | Root: `client`, Build: `npm run build` |
+| Backend | Render | Root: `backend`, Start: `npm start` |
+| Python AI | Render | Root: `ai`, Start: `gunicorn app:app` |
+| Database | MongoDB Atlas | Free M0 Cluster |
+
+---
+
+## 👩‍💻 Author
+
+**Ananya Sharma**
+- GitHub: [@Ananya0424](https://github.com/Ananya0424)
