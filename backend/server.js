@@ -10,8 +10,8 @@ const reportRoutes = require("./routes/reports");
 const app = express();
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  methods: ['GET', 'POST', 'DELETE', 'PUT'],
+  origin: '*',
+  methods: ['GET', 'POST', 'DELETE', 'PUT', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 

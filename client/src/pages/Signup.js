@@ -17,19 +17,19 @@ export default function Signup() {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/login`, {
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
       });
-      const text = await res.text();
-      let data;
-      try { data = JSON.parse(text); } catch { setError('Server error'); setLoading(false); return; }
+      const data = await res.json();
       if (!res.ok) {
         setError(data.message || 'Signup failed');
       } else {
-        alert('Account created successfully!');
-        navigate('/login');
+        // Auto-login: store token and redirect to dashboard
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        navigate('/dashboard');
       }
     } catch (err) {
       setError('Server error: ' + err.message);

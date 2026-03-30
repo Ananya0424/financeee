@@ -258,7 +258,7 @@ export default function Dashboard() {
   useEffect(() => { fetchTransactions(); }, []);
 
   const fetchInsights = async (txns) => {
-    if (!txns || txns.length === 0) { setInsights([]); return; }
+    if (!Array.isArray(txns) || txns.length === 0) { setInsights([]); return; }
     setInsightLoading(true); setInsights([]);
     try {
       const res = await fetch(`${process.env.REACT_APP_AI_URL}/analyze`, { method: 'POST',headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transactions: txns }) });
@@ -294,11 +294,22 @@ export default function Dashboard() {
   };
 
   const fetchTransactions = async () => {
-    try { const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/transactions/all`, { headers: { 'Authorization': `Bearer ${token}` } }); const data = await res.json(); setTransactions(data); fetchInsights(data); } catch { console.error('Fetch error'); }
+    try {
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/transactions/all`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : [];
+      setTransactions(list);
+      fetchInsights(list);
+    } catch {
+      console.error('Fetch error');
+      setTransactions([]);
+    }
   };
 
   const generateReport = async () => {
-    try { const now = new Date(); const res = await fetch('http://localhost:5000/api/reports/generate', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ month: now.getMonth() + 1, year: now.getFullYear() }) }); alert(res.ok ? '✅ Report generated!' : 'Failed'); } catch { alert('Server error'); }
+    try { const now = new Date(); const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/reports/generate`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ month: now.getMonth() + 1, year: now.getFullYear() }) }); alert(res.ok ? '✅ Report generated!' : 'Failed'); } catch { alert('Server error'); }
   };
 
   const handleAddTransaction = async () => {
