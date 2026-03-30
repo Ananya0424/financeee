@@ -325,15 +325,24 @@ export default function Dashboard() {
         return;
       }
       
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Finance_Report_${now.toLocaleString('default', { month: 'short' })}_${now.getFullYear()}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      const csvText = await res.text();
+      // Instantly open the report in a new tab so she doesn't need Excel/Notepad at all!
+      const newWin = window.open('', '_blank');
+      if (newWin) {
+        newWin.document.write(`
+          <html>
+            <head><title>Finance Report - ${now.getFullYear()}</title></head>
+            <body style="font-family: monospace; padding: 20px; background: #fff;">
+              <h2>Finance Report - ${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()}</h2>
+              <pre style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">${csvText}</pre>
+              <button onclick="window.print()" style="padding: 10px 20px; margin-top: 20px; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 5px;">Print / Save as PDF</button>
+            </body>
+          </html>
+        `);
+        newWin.document.close();
+      } else {
+        alert('Report generated! Please allow popups to see it.');
+      }
     } catch {
       alert('Server error');
     }
@@ -351,8 +360,9 @@ export default function Dashboard() {
   };
 
   const handleEdit = (t) => { setEditId(t._id); setTitle(t.title); setAmount(t.amount); setType(t.type); setCategory(t.category); setPaymentMethod(t.paymentMethod || 'Cash'); setNotes(t.notes || ''); setActiveTab('transactions'); window.scrollTo(0, 0); };
+  
   const handleDelete = async (id) => { 
-    if (!window.confirm('Delete this transaction?')) return; 
+    // Removed window.confirm() because some browsers silently block popups and break the delete button!
     try { 
       setMessage('success:Deleting...');
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/transactions/delete/${id}`, { 
