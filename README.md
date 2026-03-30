@@ -8,7 +8,7 @@ A full-stack web application to track daily income & expenses, set monthly budge
 
 | Service | URL |
 |---------|-----|
-| 🖥️ Frontend | https://financeee-git-main-ananya0424s-projects.vercel.app/signup |
+| 🖥️ Frontend | https://financeee-flax.vercel.app/ |
 | ⚙️ Backend API | https://financeee-backend1.onrender.com/ |
 | 🤖 Python AI |https://financeee-ai.onrender.com |
 
