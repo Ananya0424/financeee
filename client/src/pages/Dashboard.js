@@ -254,6 +254,7 @@ export default function Dashboard() {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterPayment, setFilterPayment] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [reportData, setReportData] = useState(null);
 
   useEffect(() => { fetchTransactions(); }, []);
 
@@ -309,6 +310,8 @@ export default function Dashboard() {
   };
 
   const generateReport = async () => {
+    setActiveTab('reports');
+    setReportData(null);
     try {
       const now = new Date();
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/reports/generate`, {
@@ -318,16 +321,22 @@ export default function Dashboard() {
       });
 
       if (!res.ok) {
-        alert('Failed to generate report or no transactions this month.');
+        setReportData({ error: 'Failed to generate report or no transactions this month.' });
         return;
       }
       
       const csvText = await res.text();
       const lines = csvText.trim().split('\\n');
-      if (lines.length <= 1) return; // Only header
+      if (lines.length <= 1) {
+        setReportData({ error: 'No data returned.' });
+        return;
+      }
 
       let totalIn = 0; let totalOut = 0;
-      const rows = lines.map(r => {
+      const tRows = [];
+      
+      lines.forEach((r, idx) => {
+        if(idx === 0) return; // skip header
         let row = []; let inQuote = false; let curr = '';
         for (let i=0; i<r.length; i++) {
           if (r[i] === '"') inQuote = !inQuote;
@@ -335,134 +344,19 @@ export default function Dashboard() {
           else curr += r[i];
         }
         row.push(curr);
-        return row;
-      });
-
-      // Calc summary
-      for(let i=1; i<rows.length; i++) {
-        const type = rows[i][4];
-        const amt = parseFloat(rows[i][5]);
+        tRows.push(row);
+        
+        const type = row[4];
+        const amt = parseFloat(row[5]);
         if (!isNaN(amt)) {
            if (type==='Income' || type==='income') totalIn += amt;
            else totalOut += amt;
         }
-      }
-      const netBal = totalIn - totalOut;
-
-      let tableHtml = '<table class="tx-table">';
-      rows.forEach((row, index) => {
-        let trHtml = '<tr>';
-        row.forEach((cell, cIdx) => {
-          // Amount is 5th index (6th col)
-          const align = cIdx === 5 ? 'right' : cIdx === 0 ? 'center' : 'left';
-          if (index === 0) {
-            trHtml += `<th style="text-align:${align}">${cell}</th>`;
-          } else {
-            let val = cell;
-            if (cIdx === 5) val = '₹' + parseFloat(cell).toLocaleString('en-IN');
-            if (cIdx === 4) { // coloring 'Income' vs 'Expense'
-                const color = val.toLowerCase()==='income'?'#16a34a':'#dc2626';
-                val = `<span style="color:${color}; font-weight:600; font-size:11px; padding:2px 6px; background:${color}15; border-radius:4px;">${val.toUpperCase()}</span>`;
-            }
-            trHtml += `<td style="text-align:${align}">${val}</td>`;
-          }
-        });
-        trHtml += '</tr>';
-        tableHtml += trHtml;
       });
-      tableHtml += '</table>';
-
-      const newWin = window.open('', '_blank');
-      if (newWin) {
-        newWin.document.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>Finance Report - ${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()}</title>
-              <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-              <style>
-                @page { size: A4; margin: 1.5cm; }
-                body { font-family: 'Inter', sans-serif; background: #e2e8f0; color: #0f172a; margin: 0; padding: 40px 20px; font-size: 13px; }
-                .report-page { background: #fff; max-width: 21cm; min-height: 29.7cm; margin: 0 auto; padding: 2cm; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 4px; box-sizing: border-box; }
-                
-                .header-flex { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 2px solid #cbd5e1; padding-bottom: 20px; }
-                .logo-box h1 { margin: 0; font-size: 24px; color: #1e3a8a; letter-spacing: -0.5px; }
-                .logo-box p { margin: 4px 0 0 0; color: #64748b; font-size: 12px; }
-                .meta-box { text-align: right; font-size: 12px; color: #475569; }
-                .meta-box strong { color: #0f172a; display: block; font-size: 14px; margin-bottom: 4px; }
-                
-                .summary-grid { display: flex; gap: 15px; margin-bottom: 30px; }
-                .sum-card { flex: 1; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center; }
-                .sum-title { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; margin-bottom: 6px; letter-spacing: 0.5px; }
-                .sum-val { font-size: 20px; font-weight: 700; color: #0f172a; }
-                .sum-in { color: #16a34a; } .sum-out { color: #dc2626; }
-                
-                .tx-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-                .tx-table th { background: #f1f5f9; color: #334155; font-weight: 600; padding: 10px 12px; border-bottom: 2px solid #cbd5e1; text-transform:uppercase; font-size:10px; letter-spacing:0.5px; }
-                .tx-table td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; }
-                .tx-table tr:last-child td { border-bottom: none; }
-                
-                .footer { margin-top: 40px; text-align: center; color: #94a3b8; font-size: 10px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
-                
-                .print-btn { position: fixed; bottom: 30px; right: 30px; background: #2563eb; color: #fff; border: none; padding: 14px 24px; font-size: 14px; font-weight: 600; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.3); font-family: inherit; z-index: 1000; }
-                .print-btn:hover { background: #1d4ed8; }
-                
-                @media print {
-                  body { background: #fff; padding: 0; }
-                  .report-page { box-shadow: none; padding: 0; min-height: auto; max-width: 100%; margin: 0; }
-                  .print-btn { display: none !important; }
-                  .tx-table th { background: #fff !important; color: #000; border-bottom: 2px solid #000; }
-                }
-              </style>
-            </head>
-            <body>
-              <button class="print-btn" onclick="window.print()">🖨️ Print Statement</button>
-              <div class="report-page">
-                <div class="header-flex">
-                  <div class="logo-box">
-                    <h1>Finance Tracker</h1>
-                    <p>Official Transaction Statement</p>
-                  </div>
-                  <div class="meta-box">
-                    <strong>Report Period</strong>
-                    ${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()}<br>
-                    <span style="color:#94a3b8; font-size:10px; display:block; margin-top:6px;">Generated: ${now.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</span>
-                  </div>
-                </div>
-                
-                <div class="summary-grid">
-                  <div class="sum-card">
-                    <div class="sum-title">Total Income</div>
-                    <div class="sum-val sum-in">₹${totalIn.toLocaleString('en-IN')}</div>
-                  </div>
-                  <div class="sum-card">
-                    <div class="sum-title">Total Expense</div>
-                    <div class="sum-val sum-out">₹${totalOut.toLocaleString('en-IN')}</div>
-                  </div>
-                  <div class="sum-card">
-                    <div class="sum-title">Net Balance</div>
-                    <div class="sum-val" style="color:${netBal>=0?'#2563eb':'#dc2626'}">₹${netBal.toLocaleString('en-IN')}</div>
-                  </div>
-                </div>
-
-                <div style="font-weight:600; font-size:14px; margin-bottom:12px; color:#1e293b; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">Transaction Details</div>
-                ${tableHtml}
-                
-                <div class="footer">
-                  This report is automatically generated by FinanceTracker.<br>
-                  Page 1 of 1
-                </div>
-              </div>
-            </body>
-          </html>
-        `);
-        newWin.document.close();
-        newWin.focus();
-      } else {
-        alert('Report generated! Please allow popups to see it.');
-      }
+      
+      setReportData({ rows: tRows, totalIn, totalOut, netBal: totalIn - totalOut, month: now.toLocaleString('default', { month: 'long' }), year: now.getFullYear() });
     } catch {
-      alert('Server error');
+      setReportData({ error: 'Server error while generating report.' });
     }
   };
 
@@ -498,6 +392,7 @@ export default function Dashboard() {
       setMessage('error:Server error while deleting.');
     } 
   };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -551,7 +446,7 @@ export default function Dashboard() {
               </div>
             ))}
             <div className="db-nav-label" style={{ marginTop: 14 }}>Reports</div>
-            <div className="db-nav-item" onClick={generateReport}>
+            <div className={`db-nav-item ${activeTab === 'reports' ? 'active' : ''}`} onClick={generateReport}>
               <span className="db-nav-icon">📊</span>Generate Report
             </div>
           </div>
@@ -567,7 +462,7 @@ export default function Dashboard() {
         <div className="db-main">
           <div className="db-topbar">
             <div>
-              <div className="db-topbar-title">{navItems.find(n => n.id === activeTab)?.label || 'Dashboard'}</div>
+              <div className="db-topbar-title">{navItems.find(n => n.id === activeTab)?.label || (activeTab==='reports'?'Monthly Report':'Dashboard')}</div>
               <div className="db-topbar-date">{new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
             </div>
             <div className="db-topbar-right">
@@ -637,6 +532,67 @@ export default function Dashboard() {
                   ))}
                 </div>
               </>
+            )}
+
+            {activeTab === 'reports' && (
+              <div className="db-card" style={{ minHeight:'400px' }}>
+                <div className="db-card-title" style={{ display:'flex', justifyContent:'space-between' }}>
+                  <span>Official Monthly Report</span>
+                  <button className="db-btn-primary" onClick={() => window.print()}>🖨️ Print PDF</button>
+                </div>
+                {!reportData ? (
+                  <div className="db-empty" style={{ marginTop:40 }}>
+                    <div className="db-loading-wave" style={{ justifyContent:'center' }}><div className="db-dot" /><div className="db-dot" /><div className="db-dot" /></div>
+                    Generating report data securely...
+                  </div>
+                ) : reportData.error ? (
+                  <div className="db-empty" style={{ marginTop:40 }}>
+                    <div style={{ fontSize:32 }}>⚠️</div><br/>
+                    <strong style={{ color:'#dc2626' }}>{reportData.error}</strong>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:20, paddingBottom:20, borderBottom:'1px solid #e8edf5' }}>
+                      <div style={{ fontSize:14, color:'#64748b' }}>
+                        <strong style={{ display:'block', color:'#0f172a', fontSize:18, marginBottom:4 }}>{reportData.month} {reportData.year}</strong>
+                        Generated on: {new Date().toLocaleDateString('en-IN')}
+                      </div>
+                      <div style={{ textAlign:'right', fontSize:13 }}>
+                        <div style={{ color:'#10b981'}}><strong>Income:</strong> ₹{reportData.totalIn.toLocaleString()}</div>
+                        <div style={{ color:'#ef4444'}}><strong>Expense:</strong> ₹{reportData.totalOut.toLocaleString()}</div>
+                        <div style={{ fontWeight:700, marginTop:4, color:reportData.netBal>=0?'#2563eb':'#ef4444' }}>Net: ₹{reportData.netBal.toLocaleString()}</div>
+                      </div>
+                    </div>
+                    
+                    <div style={{ overflowX:'auto' }}>
+                      <table style={{ width:'100%', textAlign:'left', borderCollapse:'collapse', fontSize:13 }}>
+                        <thead>
+                          <tr style={{ background:'#f8fafc', color:'#64748b', fontSize:11, textTransform:'uppercase', letterSpacing:0.5 }}>
+                            <th style={{ padding:12, borderBottom:'2px solid #e2e8f0' }}>Date</th>
+                            <th style={{ padding:12, borderBottom:'2px solid #e2e8f0' }}>Title</th>
+                            <th style={{ padding:12, borderBottom:'2px solid #e2e8f0' }}>Category</th>
+                            <th style={{ padding:12, borderBottom:'2px solid #e2e8f0' }}>Type</th>
+                            <th style={{ padding:12, borderBottom:'2px solid #e2e8f0', textAlign:'right' }}>Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {reportData.rows.map((r, i) => (
+                            <tr key={i} style={{ borderBottom:'1px solid #f1f5f9' }}>
+                              <td style={{ padding:12 }}>{r[0]}</td>
+                              <td style={{ padding:12, fontWeight:600, color:'#1e293b' }}>{r[1].replace(/"/g, '')}</td>
+                              <td style={{ padding:12, color:'#64748b' }}>{r[2]} ({r[3]})</td>
+                              <td style={{ padding:12 }}>
+                                <span style={{ padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:600, background:r[4]==='Income'?'#d1fae5':'#fee2e2', color:r[4]==='Income'?'#047857':'#b91c1c' }}>{r[4]}</span>
+                              </td>
+                              <td style={{ padding:12, textAlign:'right', fontWeight:700 }}>₹{parseFloat(r[5]||0).toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             {activeTab === 'transactions' && (
