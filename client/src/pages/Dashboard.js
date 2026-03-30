@@ -313,7 +313,7 @@ export default function Dashboard() {
   };
 
   const handleEdit = (t) => { setEditId(t._id); setTitle(t.title); setAmount(t.amount); setType(t.type); setCategory(t.category); setPaymentMethod(t.paymentMethod || 'Cash'); setNotes(t.notes || ''); setActiveTab('transactions'); window.scrollTo(0, 0); };
-  const handleDelete = async (id) => { if (!window.confirm('Delete?')) return; try { await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/transactions/delete/${id}`, { method: 'DELETE', 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); fetchTransactions(); } catch { } };
+  const handleDelete = async (id) => { if (!window.confirm('Delete?')) return; try { await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/transactions/delete/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); fetchTransactions(); } catch { } };
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
