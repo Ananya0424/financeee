@@ -309,7 +309,34 @@ export default function Dashboard() {
   };
 
   const generateReport = async () => {
-    try { const now = new Date(); const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/reports/generate`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ month: now.getMonth() + 1, year: now.getFullYear() }) }); alert(res.ok ? '✅ Report generated!' : 'Failed'); } catch { alert('Server error'); }
+    try {
+      const now = new Date();
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/reports/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ month: now.getMonth() + 1, year: now.getFullYear() })
+      });
+
+      if (!res.ok) {
+        alert('Failed to generate report or no transactions this month.');
+        return;
+      }
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Finance_Report_${now.toLocaleString('default', { month: 'short' })}_${now.getFullYear()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert('Server error');
+    }
   };
 
   const handleAddTransaction = async () => {

@@ -1,26 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const sqlite3 = require("sqlite3").verbose();
 const authMiddleware = require("../middleware/authMiddleware");
 const Transaction = require("../models/Transaction");
 
-// 📌 SQLite DB create/connect
-const db = new sqlite3.Database("./reports.db");
-
-// 📌 Create table if not exists
-db.run(`
-  CREATE TABLE IF NOT EXISTS reports (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    userId TEXT,
-    month INTEGER,
-    year INTEGER,
-    totalIncome REAL,
-    totalExpense REAL,
-    balance REAL
-  )
-`);
-
-// 📊 Generate Monthly Report
+// 📊 Generate Monthly CSV Report
 router.post("/generate", authMiddleware, async (req, res) => {
   try {
     const { month, year } = req.body;
@@ -31,40 +14,27 @@ router.post("/generate", authMiddleware, async (req, res) => {
       userId,
       date: {
         $gte: new Date(year, month - 1, 1),
-        $lte: new Date(year, month, 0)
+        $lte: new Date(year, month, 0, 23, 59, 59)
       }
-    });
+    }).sort({ date: -1 });
 
-    let totalIncome = 0;
-    let totalExpense = 0;
+    if (transactions.length === 0) {
+      return res.status(404).json({ message: "No transactions found for this month." });
+    }
 
+    // Generate CSV String
+    let csv = "Date,Title,Category,Payment Method,Type,Amount (INR)\n";
     transactions.forEach(t => {
-      if (t.type === "income") totalIncome += t.amount;
-      else totalExpense += t.amount;
+      const dateStr = new Date(t.date).toLocaleDateString("en-IN");
+      const typeStr = t.type === "income" ? "Income" : "Expense";
+      // Handle commas in titles or notes by wrapping in quotes
+      const cleanTitle = `"${t.title.replace(/"/g, '""')}"`;
+      csv += `${dateStr},${cleanTitle},${t.category},${t.paymentMethod},${typeStr},${t.amount}\n`;
     });
 
-    const balance = totalIncome - totalExpense;
-
-    // 📌 Insert into SQLite
-    db.run(
-      `INSERT INTO reports (userId, month, year, totalIncome, totalExpense, balance)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [userId, month, year, totalIncome, totalExpense, balance],
-      function (err) {
-        if (err) {
-          console.error(err);
-          return res.status(500).json({ message: "DB error" });
-        }
-
-        res.json({
-          message: "Report saved successfully",
-          reportId: this.lastID,
-          totalIncome,
-          totalExpense,
-          balance
-        });
-      }
-    );
+    res.header("Content-Type", "text/csv");
+    res.attachment(`Finance_Report_${month}_${year}.csv`);
+    return res.send(csv);
 
   } catch (err) {
     console.error(err);
