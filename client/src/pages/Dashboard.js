@@ -261,7 +261,7 @@ export default function Dashboard() {
     if (!txns || txns.length === 0) { setInsights([]); return; }
     setInsightLoading(true); setInsights([]);
     try {
-      const res = await `${process.env.REACT_APP_AI_URL}/analyze`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transactions: txns }) });
+      const res = await fetch(`${process.env.REACT_APP_AI_URL}/analyze`, { method: 'POST',headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transactions: txns }) });
       if (res.ok) { const data = await res.json(); if (data.insights?.length > 0) { setInsights(data.insights); setInsightLoading(false); return; } }
     } catch (_) {}
     try {
@@ -294,7 +294,7 @@ export default function Dashboard() {
   };
 
   const fetchTransactions = async () => {
-    try { const res = await `${process.env.REACT_APP_BACKEND_URL}/api/transactions/all`, { headers: { 'Authorization': `Bearer ${token}` } }); const data = await res.json(); setTransactions(data); fetchInsights(data); } catch { console.error('Fetch error'); }
+    try { const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/transactions/all`, { headers: { 'Authorization': `Bearer ${token}` } }); const data = await res.json(); setTransactions(data); fetchInsights(data); } catch { console.error('Fetch error'); }
   };
 
   const generateReport = async () => {
@@ -313,7 +313,7 @@ export default function Dashboard() {
   };
 
   const handleEdit = (t) => { setEditId(t._id); setTitle(t.title); setAmount(t.amount); setType(t.type); setCategory(t.category); setPaymentMethod(t.paymentMethod || 'Cash'); setNotes(t.notes || ''); setActiveTab('transactions'); window.scrollTo(0, 0); };
-  const handleDelete = async (id) => { if (!window.confirm('Delete?')) return; try { await fetch`${process.env.REACT_APP_BACKEND_URL}/api/transactions/delete/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); fetchTransactions(); } catch { } };
+  const handleDelete = async (id) => { if (!window.confirm('Delete?')) return; try { await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/transactions/delete/${id}`, { method: 'DELETE', 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); fetchTransactions(); } catch { } };
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
