@@ -261,7 +261,7 @@ export default function Dashboard() {
     if (!txns || txns.length === 0) { setInsights([]); return; }
     setInsightLoading(true); setInsights([]);
     try {
-      const res = await fetch('http://localhost:5001/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transactions: txns }) });
+      const res = await `${process.env.REACT_APP_AI_URL}/analyze`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transactions: txns }) });
       if (res.ok) { const data = await res.json(); if (data.insights?.length > 0) { setInsights(data.insights); setInsightLoading(false); return; } }
     } catch (_) {}
     try {
@@ -294,7 +294,7 @@ export default function Dashboard() {
   };
 
   const fetchTransactions = async () => {
-    try { const res = await fetch('http://localhost:5000/api/transactions/all', { headers: { 'Authorization': `Bearer ${token}` } }); const data = await res.json(); setTransactions(data); fetchInsights(data); } catch { console.error('Fetch error'); }
+    try { const res = await `${process.env.REACT_APP_BACKEND_URL}/api/transactions/all`, { headers: { 'Authorization': `Bearer ${token}` } }); const data = await res.json(); setTransactions(data); fetchInsights(data); } catch { console.error('Fetch error'); }
   };
 
   const generateReport = async () => {
@@ -304,7 +304,7 @@ export default function Dashboard() {
   const handleAddTransaction = async () => {
     setMessage('');
     try {
-      const url = editId ? `http://localhost:5000/api/transactions/edit/${editId}` : 'http://localhost:5000/api/transactions/add';
+      const url = editId ? `${process.env.REACT_APP_BACKEND_URL}/api/transactions/edit/${editId}` : `${process.env.REACT_APP_BACKEND_URL}/api/transactions/add`;
       const res = await fetch(url, { method: editId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ title, amount: Number(amount), type, category, paymentMethod, notes }) });
       const data = await res.json();
       if (!res.ok) { setMessage('error:' + (data.message || 'Error')); }
@@ -313,7 +313,7 @@ export default function Dashboard() {
   };
 
   const handleEdit = (t) => { setEditId(t._id); setTitle(t.title); setAmount(t.amount); setType(t.type); setCategory(t.category); setPaymentMethod(t.paymentMethod || 'Cash'); setNotes(t.notes || ''); setActiveTab('transactions'); window.scrollTo(0, 0); };
-  const handleDelete = async (id) => { if (!window.confirm('Delete?')) return; try { await fetch(`http://localhost:5000/api/transactions/delete/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); fetchTransactions(); } catch { } };
+  const handleDelete = async (id) => { if (!window.confirm('Delete?')) return; try { await fetch`${process.env.REACT_APP_BACKEND_URL}/api/transactions/delete/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); fetchTransactions(); } catch { } };
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
