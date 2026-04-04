@@ -20,7 +20,7 @@ export default function Signup() {
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), password: password.trim() }),
       });
       const data = await res.json();
       if (!res.ok) {
