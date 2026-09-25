@@ -315,7 +315,7 @@ export default function Dashboard() {
     const targetMonth = m || repMonth;
     const targetYear = y || repYear;
     setActiveTab('reports');
-    setReportData(null);
+    setReportData({ loading: true });
     try {
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/reports/generate`, {
         method: 'POST',
@@ -454,7 +454,7 @@ export default function Dashboard() {
               </div>
             ))}
             <div className="db-nav-label" style={{ marginTop: 14 }}>Reports</div>
-            <div className={`db-nav-item ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => generateReport(repMonth, repYear)}>
+            <div className={`db-nav-item ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => { setActiveTab('reports'); setReportData(null); }}>
               <span className="db-nav-icon">📊</span>Generate Report
             </div>
           </div>
@@ -559,8 +559,13 @@ export default function Dashboard() {
                 </div>
                 {!reportData ? (
                   <div className="db-empty" style={{ marginTop:40 }}>
+                    <div style={{ fontSize:32 }}>📄</div><br/>
+                    <strong style={{ color:'#64748b' }}>Select a month and click 'View' to generate your report</strong>
+                  </div>
+                ) : reportData.loading ? (
+                  <div className="db-empty" style={{ marginTop:40 }}>
                     <div className="db-loading-wave" style={{ justifyContent:'center' }}><div className="db-dot" /><div className="db-dot" /><div className="db-dot" /></div>
-                    Select month and click 'View' to see your report
+                    Generating report...
                   </div>
                 ) : reportData.error ? (
                   <div className="db-empty" style={{ marginTop:40 }}>
