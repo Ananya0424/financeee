@@ -9,6 +9,7 @@ const reportRoutes = require("./routes/reports");
 
 const app = express();
 
+// enable cors for frontend
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'DELETE', 'PUT', 'OPTIONS'],
@@ -17,20 +18,28 @@ app.use(cors({
 
 app.use(express.json());
 
-// ✅ ALL ROUTES TOGETHER (CLEAN)
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use("/api/reports", reportRoutes);
 
+// Database connection
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.log(err));
+  .then(() => console.log("DB connected successfully"))
+  .catch(err => {
+    console.log("DB connection failed!");
+    console.log(err);
+  });
 
 app.get('/', (req, res) => {
-  res.json({ message: "Server is running" });
+  res.json({ message: "Server is running fine" });
 });
+
+// app.get('/test', (req, res) => {
+//     res.send("test route working");
+// });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Backend server started on port ${PORT}`);
 });

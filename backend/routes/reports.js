@@ -3,13 +3,15 @@ const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 const Transaction = require("../models/Transaction");
 
-// 📊 Generate Monthly CSV Report
+// Route to generate monthly CSV report
 router.post("/generate", authMiddleware, async (req, res) => {
   try {
     const { month, year } = req.body;
     const userId = req.user.id;
+    
+    // console.log("Generating report for user:", userId, "month:", month);
 
-    // 📌 Get transactions from MongoDB
+    // Get transactions from db
     const transactions = await Transaction.find({
       userId,
       date: {
@@ -19,10 +21,11 @@ router.post("/generate", authMiddleware, async (req, res) => {
     }).sort({ date: -1 });
 
     if (transactions.length === 0) {
+      // no data found
       return res.status(404).json({ message: "No transactions found for this month." });
     }
 
-    // Generate CSV String
+    // Generate CSV String manually
     let csv = "Date,Title,Category,Payment Method,Type,Amount (INR)\n";
     transactions.forEach(t => {
       const dateStr = new Date(t.date).toLocaleDateString("en-IN");
