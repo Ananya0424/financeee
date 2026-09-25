@@ -27,23 +27,23 @@ def analyze():
         if total_income > 0:
             sp = ((total_income - total_expense) / total_income) * 100
             if sp < 20:
-                insights.append("Warning: Savings sirf " + str(round(sp,1)) + "% hai!")
+                insights.append("Warning: Your savings are only " + str(round(sp, 1)) + "% of your income!")
             else:
-                insights.append("Shabash! Income ka " + str(round(sp,1)) + "% bach raha hai!")
+                insights.append("Great job! You are saving " + str(round(sp, 1)) + "% of your income!")
         if not expenses.empty:
             ce = expenses.groupby('category')['amount'].sum()
-            insights.append("Sabse zyada kharch: " + str(ce.idxmax()) + " Rs." + str(round(float(ce.max()))))
+            insights.append("Highest expense category: " + str(ce.idxmax()) + " (Rs. " + str(round(float(ce.max()))) + ")")
         if total_expense > total_income:
-            insights.append("Khabardar! Expense income se zyada hai!")
+            insights.append("Alert: Your expenses have exceeded your income!")
         else:
-            insights.append("Balance positive hai: Rs." + str(round(balance)))
+            insights.append("Good standing: Your net balance is positive at Rs. " + str(round(balance)))
         if not expenses.empty:
             ce = expenses.groupby('category')['amount'].sum()
             for cat, amt in ce.items():
                 if total_income > 0:
                     pct = (float(amt) / total_income) * 100
                     if pct > 30:
-                        insights.append(str(cat) + " pe " + str(round(pct,1)) + "% kharch - control karo!")
+                        insights.append("High spending alert: You spent " + str(round(pct, 1)) + "% of your income on " + str(cat) + ". Consider cutting back.")
         return jsonify({"insights": insights})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
