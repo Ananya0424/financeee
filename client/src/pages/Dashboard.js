@@ -454,7 +454,7 @@ export default function Dashboard() {
               </div>
             ))}
             <div className="db-nav-label" style={{ marginTop: 14 }}>Reports</div>
-            <div className={`db-nav-item ${activeTab === 'reports' ? 'active' : ''}`} onClick={generateReport}>
+            <div className={`db-nav-item ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => generateReport(repMonth, repYear)}>
               <span className="db-nav-icon">📊</span>Generate Report
             </div>
           </div>
