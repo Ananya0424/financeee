@@ -324,7 +324,12 @@ export default function Dashboard() {
       });
 
       if (!res.ok) {
-        setReportData({ error: `No transactions found for ${new Date(targetYear, targetMonth-1).toLocaleString('default', { month: 'long' })} ${targetYear}.` });
+        if (res.status === 404) {
+          setReportData({ error: `No transactions found for ${new Date(targetYear, targetMonth-1).toLocaleString('default', { month: 'long' })} ${targetYear}.` });
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          setReportData({ error: `Server Error: ${errData.message || 'Failed to generate report'}` });
+        }
         return;
       }
       
