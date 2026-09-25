@@ -46,7 +46,7 @@ export default function Login() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         .lg-root {
           min-height: 100vh; display: flex; align-items: center; justify-content: center;
-          background: radial-gradient(circle at center, #1e3a5f 0%, #050b14 100%);
+          background: linear-gradient(135deg, #fdfbfb 0%, #e2ebf0 100%);
           font-family: 'Outfit', sans-serif; padding: 20px;
         }
         .lg-card {
