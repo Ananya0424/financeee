@@ -40,10 +40,10 @@ export default function Login() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         .lg-root {
           min-height: 100vh; display: flex; align-items: center; justify-content: center;
-          background: linear-gradient(135deg, #fdfbfb 0%, #e2ebf0 100%);
+          background: #f8fafc;
           font-family: 'Outfit', sans-serif; padding: 20px;
         }
-        .lg-card { position: relative; z-index: 2; background: rgba(255,255,255,0.97); border-radius: 20px;
+        .lg-card { position: relative; z-index: 2; background: rgba(255,255,255,0.97); border-radius: 8px;
           padding: 36px 32px; width: 100%; max-width: 380px;
           box-shadow: 0 25px 60px rgba(0,0,0,0.35);
         }
@@ -92,23 +92,7 @@ export default function Login() {
         .lg-foot a { color: #3b82f6; font-weight: 600; cursor: pointer; text-decoration: none; }
         .lg-foot a:hover { text-decoration: underline; }
       `}
-        .floating-icon {
-          position: absolute;
-          filter: drop-shadow(0 15px 20px rgba(0,0,0,0.15));
-          animation: float 6s ease-in-out infinite;
-          pointer-events: none;
-          z-index: 1;
-          opacity: 0.8;
-        }
-        .f-1 { top: 15%; left: 10%; animation-delay: 0s; font-size: 65px; }
-        .f-2 { bottom: 20%; left: 15%; animation-delay: 2s; font-size: 55px; }
-        .f-3 { top: 20%; right: 12%; animation-delay: 1.5s; font-size: 70px; }
-        .f-4 { bottom: 25%; right: 18%; animation-delay: 3.5s; font-size: 60px; }
-        .f-5 { top: 5%; right: 40%; animation-delay: 1s; font-size: 45px; }
-        .f-6 { bottom: 8%; left: 40%; animation-delay: 2.5s; font-size: 50px; }
-        
-        @keyframes float {
-          0% { transform: translateY(0px) rotate(0deg); }
+
           50% { transform: translateY(-25px) rotate(10deg); }
           100% { transform: translateY(0px) rotate(0deg); }
         }
@@ -116,13 +100,6 @@ export default function Login() {
       </style>
 
       <div className="lg-root">
-
-        <div className="floating-icon f-1">💰</div>
-        <div className="floating-icon f-2">📈</div>
-        <div className="floating-icon f-3">💳</div>
-        <div className="floating-icon f-4">🏦</div>
-        <div className="floating-icon f-5">💸</div>
-        <div className="floating-icon f-6">🪙</div>
 
         <div className="lg-card">
           <div className="lg-brand">

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Charts from './Charts';
 import Budget from './Budget';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
@@ -101,7 +103,7 @@ const css = `
     border-top: 3px solid transparent;
     transition: transform 0.2s, box-shadow 0.2s;
   }
-  .db-stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59,130,246,0.1); }
+  .db-stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
   .db-stat-label { font-size: 10px; font-weight: 700; color: #94a3b8; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 10px; }
   .db-stat-icon  { font-size: 20px; margin-bottom: 6px; }
   .db-stat-value { font-size: 22px; font-weight: 800; color: #0f172a; }
@@ -157,7 +159,7 @@ const css = `
     padding: 11px 20px; background: #2563eb;
     color: #fff; border: none; border-radius: 10px; cursor: pointer;
     font-size: 13px; font-weight: 700; font-family: 'Outfit', sans-serif;
-    box-shadow: 0 4px 14px rgba(37,99,235,0.3); transition: background .15s, transform .15s;
+     transition: background .15s, transform .15s;
   }
   .db-btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
   .db-btn-danger {
@@ -179,7 +181,7 @@ const css = `
   .db-payment-badge {
     display: inline-flex; align-items: center; gap: 6px;
     background: #eff6ff; color: #2563eb; padding: 5px 14px;
-    border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid #bfdbfe;
+    border-radius: 8px; font-size: 12px; font-weight: 600; border: 1px solid #bfdbfe;
   }
 
   /* INSIGHTS */
@@ -229,7 +231,7 @@ const css = `
   .db-insight-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
   .db-insight-count {
     font-size: 11px; font-weight: 600; padding: 4px 12px;
-    border-radius: 20px; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;
+    border-radius: 8px; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;
   }
 `;
 
@@ -310,6 +312,94 @@ export default function Dashboard() {
       setTransactions([]);
     }
   };
+
+  
+  const downloadPDF = async () => {
+    if (!reportData || !reportData.rows) {
+      alert('Please generate a report first before downloading.');
+      return;
+    }
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Financial Report', pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(14);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Period: ${reportData.month} ${reportData.year}`, pageWidth / 2, 30, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString('en-IN')}`, pageWidth / 2, 36, { align: 'center' });
+    
+    // Summary Cards
+    doc.setDrawColor(226, 232, 240);
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(14, 45, pageWidth - 28, 25, 3, 3, 'FD');
+    
+    doc.setFontSize(12);
+    doc.setTextColor(16, 185, 129); // Green
+    doc.text('Total Income', 20, 55);
+    doc.setFontSize(14);
+    doc.text(`Rs. ${reportData.totalIn.toLocaleString()}`, 20, 63);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(239, 68, 68); // Red
+    doc.text('Total Expense', pageWidth / 2 - 20, 55);
+    doc.setFontSize(14);
+    doc.text(`Rs. ${reportData.totalOut.toLocaleString()}`, pageWidth / 2 - 20, 63);
+    
+    doc.setFontSize(12);
+    const balColor = reportData.netBal >= 0 ? [37, 99, 235] : [239, 68, 68];
+    doc.setTextColor(balColor[0], balColor[1], balColor[2]);
+    doc.text('Net Balance', pageWidth - 50, 55);
+    doc.setFontSize(14);
+    doc.text(`Rs. ${reportData.netBal.toLocaleString()}`, pageWidth - 50, 63);
+    
+    let currentY = 80;
+    
+    // AI Insights Section
+    if (insights && insights.length > 0) {
+      doc.setFontSize(14);
+      doc.setTextColor(15, 23, 42);
+      doc.text('AI Financial Insights', 14, currentY);
+      currentY += 8;
+      
+      doc.setFontSize(10);
+      doc.setTextColor(71, 85, 105);
+      insights.forEach((insight, idx) => {
+        const textLines = doc.splitTextToSize(`• ${insight}`, pageWidth - 28);
+        doc.text(textLines, 14, currentY);
+        currentY += (textLines.length * 5) + 2;
+      });
+      currentY += 5;
+    }
+    
+    // Transactions Table
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Transaction Details', 14, currentY + 5);
+    
+    const tableBody = reportData.rows.slice(1).map(row => {
+      return [row[0], row[1].replace(/"/g, ''), row[2], row[3], row[4], `Rs. ${row[5]}`];
+    });
+    
+    doc.autoTable({
+      startY: currentY + 10,
+      head: [['Date', 'Title', 'Category', 'Method', 'Type', 'Amount']],
+      body: tableBody,
+      theme: 'grid',
+      headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255] },
+      styles: { fontSize: 9 },
+      alternateRowStyles: { fillColor: [248, 250, 252] }
+    });
+    
+    doc.save(`Finance_Report_${reportData.month}_${reportData.year}.pdf`);
+  };
+
 
   const generateReport = async (m, y) => {
     const targetMonth = m || repMonth;
@@ -555,7 +645,7 @@ export default function Dashboard() {
                     </select>
                     <button className="db-btn-primary" style={{ padding:'7px 15px' }} onClick={() => generateReport(repMonth, repYear)}>View</button>
                   </div>
-                  <button className="db-btn-primary" style={{ background:'#10b981' }} onClick={() => window.print()}>🖨️ Print PDF</button>
+                  <button className="db-btn-primary" style={{ background:'#10b981' }} onClick={downloadPDF}>🖨️ Print PDF</button>
                 </div>
                 {!reportData ? (
                   <div className="db-empty" style={{ marginTop:40 }}>
@@ -676,39 +766,61 @@ export default function Dashboard() {
 
             {activeTab === 'insights' && (
               <div className="db-card">
-                <div className="db-insight-header">
-                  <div className="db-card-title" style={{ margin:0,flex:1 }}>AI Financial Insights</div>
-                  <div style={{ display:'flex',alignItems:'center',gap:10 }}>
-                    {insights.length > 0 && <span className="db-insight-count">{insights.length} insights</span>}
-                    <button className="db-refresh-btn" disabled={insightLoading} onClick={() => fetchInsights(transactions)}>
-                      {insightLoading ? '⏳ Analyzing...' : '🔄 Refresh'}
-                    </button>
-                  </div>
+                <div className="db-card-header" style={{ marginBottom: '24px', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
+                  <h2 className="db-card-title" style={{ margin: 0, fontSize: '20px', color: '#0f172a' }}>AI Financial Analysis</h2>
+                  <p style={{ margin: '8px 0 0 0', color: '#64748b', fontSize: '14px', lineHeight: '1.5' }}>
+                    AI-generated financial insights based on your transaction history. 
+                    This automated analysis helps identify spending patterns and saving opportunities.
+                  </p>
                 </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <div style={{ fontSize: '14px', color: '#475569', fontWeight: 500 }}>
+                    {insights.length > 0 ? `Analyzed ${transactions.length} transactions` : 'Analysis ready'}
+                  </div>
+                  <button 
+                    className="db-btn-primary" 
+                    disabled={insightLoading} 
+                    onClick={() => fetchInsights(transactions)}
+                    style={{ background: '#0f172a', padding: '8px 16px', borderRadius: '6px' }}
+                  >
+                    {insightLoading ? 'Running Analysis...' : 'Generate Analysis'}
+                  </button>
+                </div>
+
                 {insightLoading ? (
-                  <div style={{ textAlign:'center',padding:'40px 0' }}>
-                    <div className="db-loading-wave"><div className="db-dot"/><div className="db-dot"/><div className="db-dot"/></div>
-                    <div style={{ color:'#94a3b8',fontSize:13,marginTop:8 }}>Analyzing your spending patterns...</div>
+                  <div style={{ textAlign: 'center', padding: '60px 0', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ color: '#475569', fontSize: '14px', fontWeight: 500 }}>Analyzing financial data...</div>
                   </div>
                 ) : insights.length === 0 ? (
-                  <div className="db-empty" style={{ padding:'48px 0' }}>
-                    <div style={{ fontSize:38,marginBottom:12 }}>🤖</div>
-                    <div style={{ fontSize:14,color:'#94a3b8' }}>No insights yet</div>
-                    <div style={{ fontSize:12,color:'#bfcce0',marginTop:6 }}>Add transactions to get AI suggestions</div>
+                  <div style={{ textAlign: 'center', padding: '60px 0', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
+                    <div style={{ color: '#64748b', fontSize: '14px' }}>No analysis generated yet. Click the button above to start.</div>
                   </div>
-                ) : insights.map((insight,i) => {
-                  const colors=['#2563eb','#10b981','#8b5cf6','#f59e0b','#ef4444','#06b6d4'];
-                  const icons=['💡','📊','🎯','💰','📈','⚠️'];
-                  return (
-                    <div key={i} className="db-insight-card" style={{ borderLeftColor:colors[i%colors.length] }}>
-                      <div className="db-insight-icon" style={{ background:`${colors[i%colors.length]}18` }}>{icons[i%icons.length]}</div>
-                      <div>
-                        <div className="db-insight-label" style={{ color:colors[i%colors.length] }}>Insight {i+1}</div>
-                        <p className="db-insight-text">{insight}</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {insights.map((insight, i) => (
+                      <div key={i} style={{ 
+                        padding: '16px 20px', 
+                        background: '#f8fafc', 
+                        border: '1px solid #e2e8f0',
+                        borderLeft: '4px solid #3b82f6',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px'
+                      }}>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Finding {i + 1}
+                        </div>
+                        <div style={{ fontSize: '15px', color: '#1e293b', lineHeight: '1.6' }}>
+                          {insight}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}}
               </div>
             )}
           </div>
