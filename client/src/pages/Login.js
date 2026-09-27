@@ -93,9 +93,6 @@ export default function Login() {
         .lg-foot a:hover { text-decoration: underline; }
       `}
 
-          50% { transform: translateY(-25px) rotate(10deg); }
-          100% { transform: translateY(0px) rotate(0deg); }
-        }
 
       </style>
 
